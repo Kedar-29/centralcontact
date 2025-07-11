@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Website {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  name      String
+  domain    String   @unique
+  appKey    String   @unique
+  secretKey String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  forms Form[]
+}
+
+model Form {
+  id         Int      @id @default(autoincrement())
+  formId     String   @unique @default(uuid())
+  title      String? // optional title
+  formSchema Json
+  websiteId  Int
+  website    Website  @relation(fields: [websiteId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  submissions Message[]
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  formData  Json
+  createdAt DateTime @default(now())
+  formId    Int
+  form      Form     @relation(fields: [formId], references: [id])
+}
