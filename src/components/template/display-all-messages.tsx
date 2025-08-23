@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ColumnDef,
+  CellContext,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -18,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ interface Message {
 }
 
 export default function MessageTable() {
+  const router = useRouter();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [pageSize, setPageSize] = useState(5);
@@ -63,17 +66,19 @@ export default function MessageTable() {
     {
       accessorKey: "form.website.name",
       header: "Application",
-      cell: (ctx) => ctx.row.original.form.website.name,
+      cell: (ctx: CellContext<Message, unknown>) =>
+        ctx.row.original.form.website.name,
     },
     {
       accessorKey: "form.title",
       header: "Form Title",
-      cell: (ctx) => ctx.row.original.form.title ?? "Untitled",
+      cell: (ctx: CellContext<Message, unknown>) =>
+        ctx.row.original.form.title ?? "Untitled",
     },
     {
       accessorKey: "createdAt",
       header: "Submitted At",
-      cell: (ctx) =>
+      cell: (ctx: CellContext<Message, unknown>) =>
         new Date(ctx.row.original.createdAt).toLocaleString("en-IN", {
           dateStyle: "medium",
           timeStyle: "short",
@@ -82,9 +87,12 @@ export default function MessageTable() {
     ...fieldNames.map((field) => ({
       accessorKey: `formData.${field}`,
       header: field,
-      cell: (ctx: {
-        row: { original: { formData: { [x: string]: unknown } } };
-      }) => ctx.row.original.formData[field] ?? "-",
+      cell: (ctx: CellContext<Message, unknown>) => {
+        const val = ctx.row.original.formData[field];
+        if (val === null || val === undefined) return "-";
+        if (typeof val === "object") return JSON.stringify(val);
+        return String(val);
+      },
     })),
   ];
 
@@ -98,15 +106,31 @@ export default function MessageTable() {
   });
 
   return (
-    <Card className="w-full border border-gray-200 shadow-sm">
-      <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <CardTitle className="text-lg font-medium">
-          📨 Submitted Messages
-        </CardTitle>
+    <div className="w-full py-8 px-[96px] bg-white dark:bg-[#1A1A1A] rounded-md">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-black dark:text-[#F0F0F0]">
+          Your All Messages
+        </h1>
+
+        <Button
+          variant="outline"
+          className="text-sm px-4 py-1.5 dark:text-[#F0F0F0] hover:bg-neutral-800"
+          onClick={() => router.push("/dashboard")}
+        >
+          ← Back
+        </Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+        <h2 className="text-base font-medium text-neutral-500 dark:text-neutral-400">
+          Messages
+        </h2>
 
         {!loading && messages.length > 0 && (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">Rows per page:</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-neutral-500 dark:text-neutral-400">
+              Rows per page:
+            </span>
             <Select
               value={String(pageSize)}
               onValueChange={(v) => {
@@ -114,12 +138,16 @@ export default function MessageTable() {
                 setPageIndex(0);
               }}
             >
-              <SelectTrigger className="w-20 h-8">
+              <SelectTrigger className="w-[72px] h-8 text-sm dark:bg-[#1A1A1A] dark:text-[#F0F0F0]">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent side="top">
+              <SelectContent side="top" className="dark:bg-[#1A1A1A]">
                 {[5, 10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={String(size)}>
+                  <SelectItem
+                    key={size}
+                    value={String(size)}
+                    className="dark:text-[#F0F0F0] dark:hover:bg-neutral-800"
+                  >
                     {size}
                   </SelectItem>
                 ))}
@@ -127,85 +155,90 @@ export default function MessageTable() {
             </Select>
           </div>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent>
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-        ) : messages.length === 0 ? (
-          <p className="text-sm text-gray-500">No messages submitted yet.</p>
-        ) : (
-          <>
-            <ScrollArea className="max-h-[60vh]">
-              <Table className="min-w-full divide-y divide-gray-200">
-                <TableHeader>
-                  {table.getHeaderGroups().map((hg) => (
-                    <TableRow
-                      key={hg.id}
-                      className="bg-gray-50 [&_th]:font-semibold [&_th]:text-left"
-                    >
-                      {hg.headers.map((header) => (
-                        <TableHead key={header.id} className="px-4 py-2">
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className="transition hover:bg-gray-100"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="px-4 py-2">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+      {loading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-full bg-gray-300 dark:bg-[#333]" />
+          <Skeleton className="h-6 w-full bg-gray-300 dark:bg-[#333]" />
+          <Skeleton className="h-6 w-full bg-gray-300 dark:bg-[#333]" />
+        </div>
+      ) : messages.length === 0 ? (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          No messages submitted yet.
+        </p>
+      ) : (
+        <>
+          <ScrollArea className="max-h-[60vh] rounded-md">
+            <Table className="border border-gray-300 dark:border-neutral-700 rounded-md overflow-hidden">
+              <TableHeader className="dark:bg-[#1A1A1A]">
+                {table.getHeaderGroups().map((hg) => (
+                  <TableRow key={hg.id}>
+                    {hg.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="px-6 text-neutral-600 dark:text-neutral-400 border-none"
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="bg-white dark:bg-[#1A1A1A] hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="px-6 text-sm text-black dark:text-[#F0F0F0] border-none"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
 
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-600">
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount()}
-              </p>
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPageIndex((i) => Math.max(i - 1, 0))}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  Previous
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPageIndex((i) => i + 1)}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                </Button>
-              </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-sm dark:text-[#F0F0F0] hover:bg-neutral-800"
+                onClick={() => setPageIndex((i) => Math.max(i - 1, 0))}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-sm dark:text-[#F0F0F0] hover:bg-neutral-800"
+                onClick={() => setPageIndex((i) => i + 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                Next
+              </Button>
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

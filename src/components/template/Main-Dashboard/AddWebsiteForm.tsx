@@ -68,14 +68,14 @@ export default function AddWebsiteForm() {
 
   return (
     <>
-      {/* Animated Page Load */}
+      {/* Page Content */}
       <motion.div
         initial={{ opacity: 0, filter: "blur(4px)" }}
         animate={{ opacity: 1, filter: "blur(0px)" }}
         transition={{ duration: 0.5 }}
-        className="h-screen flex flex-col items-center justify-start pt-24 px-4 bg-background"
+        className="min-h-screen flex flex-col items-center justify-start pt-24 px-4"
       >
-        <Card className="w-full max-w-xl shadow-xl border border-border bg-card">
+        <Card className="w-full max-w-xl shadow-xl border border-border bg-card/90 backdrop-blur">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-semibold">
               <AnimatedText text="Namaste User " />
@@ -112,7 +112,6 @@ export default function AddWebsiteForm() {
           </CardContent>
         </Card>
 
-        {/* Quick Links below with spacing */}
         <div className="mt-10 w-full flex justify-center">
           <DashboardQuickLinks />
         </div>
@@ -148,7 +147,6 @@ export default function AddWebsiteForm() {
         </DialogContent>
       </Dialog>
 
-      {/* Sonner Toaster */}
       <Toaster
         position="bottom-right"
         richColors

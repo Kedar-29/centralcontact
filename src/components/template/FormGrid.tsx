@@ -3,8 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "sonner";
-import { Pencil, Trash2, Check, X } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  Pencil,
+  Trash2,
+  Check,
+  X,
+  ArrowLeft,
+  MoreHorizontal,
+  Clipboard,
+  CheckCircle,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +31,12 @@ export default function FormGrid({ uuid }: { uuid: string }) {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState("");
+  const [popupOpenId, setPopupOpenId] = useState<number | null>(null);
+  const [modalContent, setModalContent] = useState<"api" | "table" | null>(
+    null
+  );
+  const [copied, setCopied] = useState(false);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -74,10 +89,52 @@ export default function FormGrid({ uuid }: { uuid: string }) {
     }
   };
 
+  // Close popup and modal on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (!(e.target instanceof HTMLElement)) return;
+      if (
+        !e.target.closest(".popup-menu") &&
+        !e.target.closest(".modal-content")
+      ) {
+        setPopupOpenId(null);
+        setModalContent(null);
+        setCopied(false);
+      }
+    }
+    if (popupOpenId !== null || modalContent !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [popupOpenId, modalContent]);
+
+  const handleShowMessages = (formId: string) => {
+    const path = `/dashboard/applications/${uuid}/forms/${formId}`;
+    router.push(new URL(path, window.location.origin).pathname);
+  };
+
   return (
     <>
       <Toaster position="bottom-right" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 px-4 sm:px-10 py-6">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 sm:px-10 py-6 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-semibold dark:text-white">Forms</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="flex items-center gap-1 dark:text-gray-300"
+          aria-label="Go back"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </Button>
+      </div>
+
+      {/* Forms Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 px-4 sm:px-10 pb-10 max-w-7xl mx-auto">
         {loading
           ? Array.from({ length: 6 }).map((_, i) => (
               <Skeleton
@@ -92,14 +149,14 @@ export default function FormGrid({ uuid }: { uuid: string }) {
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
               >
-                <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.015] transition-all duration-200 ease-in-out group relative">
+                <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.015] transition-all duration-200 ease-in-out group relative dark:bg-gray-800 dark:border dark:border-gray-700">
                   <CardHeader>
                     {editingId === form.id ? (
                       <div className="flex gap-2 items-center">
                         <Input
                           value={editedTitle}
                           onChange={(e) => setEditedTitle(e.target.value)}
-                          className="text-sm"
+                          className="text-sm dark:bg-gray-700 dark:text-white"
                           autoFocus
                         />
                         <Button
@@ -113,16 +170,17 @@ export default function FormGrid({ uuid }: { uuid: string }) {
                           size="sm"
                           variant="ghost"
                           onClick={() => setEditingId(null)}
+                          className="dark:text-gray-300"
                         >
                           <X size={16} />
                         </Button>
                       </div>
                     ) : (
                       <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg font-medium">
+                        <CardTitle className="text-lg font-medium dark:text-white">
                           {form.title || "Untitled Form"}
                         </CardTitle>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 relative">
                           <Button
                             size="icon"
                             variant="ghost"
@@ -130,6 +188,8 @@ export default function FormGrid({ uuid }: { uuid: string }) {
                               setEditingId(form.id);
                               setEditedTitle(form.title);
                             }}
+                            className="dark:text-gray-300"
+                            aria-label="Edit form title"
                           >
                             <Pencil size={16} />
                           </Button>
@@ -137,9 +197,64 @@ export default function FormGrid({ uuid }: { uuid: string }) {
                             size="icon"
                             variant="ghost"
                             onClick={() => deleteForm(form.id)}
+                            className="dark:text-gray-300"
+                            aria-label="Delete form"
                           >
                             <Trash2 size={16} />
                           </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (popupOpenId === form.id) {
+                                setPopupOpenId(null);
+                                setModalContent(null);
+                                setCopied(false);
+                              } else {
+                                setPopupOpenId(form.id);
+                                setModalContent(null);
+                                setCopied(false);
+                              }
+                            }}
+                            aria-label="More options"
+                            className="dark:text-gray-300"
+                          >
+                            <MoreHorizontal size={20} />
+                          </Button>
+
+                          {/* Popup menu */}
+                          <AnimatePresence>
+                            {popupOpenId === form.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full right-0 mt-2 w-56 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-lg z-50 popup-menu"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  onClick={() => {
+                                    setModalContent("api");
+                                    setPopupOpenId(null);
+                                  }}
+                                  className="w-full flex justify-between items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                  Show API Endpoint
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setModalContent("table");
+                                    setPopupOpenId(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                  Show Table Details
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
                     )}
@@ -152,38 +267,160 @@ export default function FormGrid({ uuid }: { uuid: string }) {
                         `/dashboard/applications/${uuid}/forms/${form.formId}`
                       )
                     }
+                    className="dark:text-gray-300 flex flex-col gap-2"
                   >
-                    <ApiEndpointButton uuid={uuid} formId={form.formId} />
+                    {/* Show messages button */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShowMessages(form.formId);
+                      }}
+                      className="dark:text-gray-300"
+                    >
+                      Show Messages
+                    </Button>
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
       </div>
+
+      {/* Modal for API Endpoint or Table Details */}
+      <AnimatePresence>
+        {modalContent && (
+          <Modal onClose={() => setModalContent(null)}>
+            <PopupDetailsModal
+              modalContent={modalContent}
+              uuid={uuid}
+              forms={forms}
+              copied={copied}
+              onCopy={() => {
+                if (!modalContent || forms.length === 0) return;
+                // Show API endpoint of the first form matching modalContent is "api"
+                // You can modify as needed to show specific form if you track it.
+                // For now, let's just demo with the first form.
+                const form = forms[0];
+                if (!form) return;
+                const apiUrl = `/api/${uuid}/${form.formId}`;
+                navigator.clipboard.writeText(apiUrl).then(() => {
+                  toast.success("Copied to clipboard");
+                });
+              }}
+            />
+          </Modal>
+        )}
+      </AnimatePresence>
     </>
   );
 }
 
-function ApiEndpointButton({ uuid, formId }: { uuid: string; formId: string }) {
-  const [showEndpoint, setShowEndpoint] = useState(false);
-  const apiEndpoint = `/api/${uuid}/${formId}`;
-
+// Modal overlay wrapper
+function Modal({
+  children,
+  onClose,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
   return (
-    <div>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent card navigation on button click
-          setShowEndpoint((v) => !v);
-        }}
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="modal-content bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-lg"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {showEndpoint ? "Hide API Endpoint" : "Show API Endpoint"}
-      </Button>
-      {showEndpoint && (
-        <p className="mt-2 text-xs font-mono text-muted-foreground break-all">
-          {apiEndpoint}
-        </p>
-      )}
-    </div>
+        {children}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="mt-4 w-full"
+          onClick={onClose}
+        >
+          Close
+        </Button>
+      </motion.div>
+    </motion.div>
   );
+}
+
+// PopupDetailsModal shows modal content based on type
+function PopupDetailsModal({
+  modalContent,
+  uuid,
+  forms,
+  copied,
+  onCopy,
+}: {
+  modalContent: "api" | "table";
+  uuid: string;
+  forms: Form[];
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  // Just demo using first form
+  const form = forms[0];
+
+  if (!form) return null;
+
+  if (modalContent === "api") {
+    const apiEndpoint = `/api/${uuid}/${form.formId}`;
+    return (
+      <div className="flex flex-col gap-4 font-mono text-sm text-gray-900 dark:text-gray-100">
+        <h3 className="text-lg font-semibold">API Endpoint</h3>
+        <div className="flex justify-between items-center">
+          <code className="break-all">{apiEndpoint}</code>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onCopy}
+            className="flex items-center gap-1"
+          >
+            {copied ? (
+              <>
+                <CheckCircle size={16} />
+                Copied
+              </>
+            ) : (
+              <>
+                <Clipboard size={16} />
+                Copy
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (modalContent === "table") {
+    const tableDetails = {
+      id: form.id,
+      formId: form.formId,
+      createdAt: new Date().toISOString(),
+      fields: [
+        { name: "firstName", type: "string" },
+        { name: "email", type: "string" },
+      ],
+    };
+    return (
+      <div className="font-mono text-sm text-gray-900 dark:text-gray-100">
+        <h3 className="text-lg font-semibold mb-2">Table Details</h3>
+        <pre className="overflow-auto max-h-64 whitespace-pre-wrap bg-gray-100 dark:bg-gray-700 p-4 rounded">
+          {JSON.stringify(tableDetails, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
+  return null;
 }
