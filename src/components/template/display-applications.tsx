@@ -33,7 +33,7 @@ export default function DisplayApplication() {
   const [formsMap, setFormsMap] = useState<Record<number, Form[]>>({});
   const [activeSiteId, setActiveSiteId] = useState<number | null>(null);
   const [activeSection, setActiveSection] = useState<ActiveSection>(null);
-  const [hasMounted, setHasMounted] = useState(false); // hydration guard
+  const [hasMounted, setHasMounted] = useState(false);
 
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const menuRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -44,6 +44,7 @@ export default function DisplayApplication() {
 
   const modalRef = useRef<HTMLDivElement | null>(null);
 
+  // Fetch websites and their forms
   const fetchWebsites = async () => {
     const sites: Website[] = await fetch("/api/websites").then((r) => r.json());
     setWebsites(sites);
@@ -60,6 +61,7 @@ export default function DisplayApplication() {
     fetchWebsites();
   }, []);
 
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -74,6 +76,7 @@ export default function DisplayApplication() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [openMenuId]);
 
+  // Close modals on outside click or escape
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {
       if (
@@ -161,8 +164,7 @@ export default function DisplayApplication() {
         const error = await res.json();
         toast.error(error.message || "❌ Error adding form");
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       toast.error("❌ Network error while adding form");
     }
   };
@@ -186,7 +188,7 @@ export default function DisplayApplication() {
   return res.json();
 }`;
 
-  if (!hasMounted) return null; // ⛔️ Prevent hydration mismatch
+  if (!hasMounted) return null; // Prevent hydration mismatch
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -207,7 +209,7 @@ export default function DisplayApplication() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07 }}
           >
-            <Card className="relative shadow-md rounded-xl hover:shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-default dark:bg-gray-800 dark:border dark:border-gray-700 p-4">
+            <Card className="relative shadow-md rounded-2xl hover:shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-default dark:bg-gray-800 dark:border dark:border-gray-700 p-4">
               <CardHeader className="flex justify-between items-center p-0">
                 <div className="pr-4">
                   <CardTitle className="text-lg font-semibold dark:text-white mb-1">
@@ -244,7 +246,7 @@ export default function DisplayApplication() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-44 bg-white rounded-md shadow-lg border z-50 dark:bg-gray-900 dark:border-gray-700"
+                        className="absolute right-0 mt-2 w-44 bg-card/90 backdrop-blur rounded-md shadow-lg border z-50 dark:bg-gray-900 dark:border-gray-700"
                       >
                         {["details", "addForm", "apiDocs"].map((section) => (
                           <button
@@ -301,7 +303,7 @@ export default function DisplayApplication() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.2 }}
-              className="fixed top-1/2 left-1/2 max-w-lg w-full -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-lg shadow-lg p-6 dark:bg-gray-800 dark:border dark:border-gray-700"
+              className="fixed top-1/2 left-1/2 max-w-lg w-full -translate-x-1/2 -translate-y-1/2 z-50 bg-card/90 backdrop-blur rounded-xl shadow-lg p-6 dark:bg-gray-800 dark:border dark:border-gray-700"
               ref={modalRef}
             >
               <div className="flex justify-between items-center mb-4">
@@ -407,16 +409,18 @@ export default function DisplayApplication() {
                       </pre>
                     </>
                   )}
-                  <Button onClick={addForm}>Save Form</Button>
+                  <Button className="w-full" onClick={addForm}>
+                    Save Form
+                  </Button>
                 </div>
               )}
 
               {activeSection === "apiDocs" && activeSite && (
-                <div className="text-sm space-y-6 border rounded-lg p-4 bg-muted shadow-inner max-h-60 overflow-auto dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                <div className="text-sm space-y-6 border rounded-lg p-4 bg-card/80 backdrop-blur shadow-inner max-h-60 overflow-auto dark:bg-gray-700 dark:text-white dark:border-gray-600">
                   <h3 className="text-lg font-semibold text-primary dark:text-white">
                     📌 API Endpoint
                   </h3>
-                  <div className="flex items-center justify-between bg-background p-3 rounded border dark:bg-gray-800 dark:border-gray-600">
+                  <div className="flex items-center justify-between bg-background/80 p-3 rounded border dark:bg-gray-800 dark:border-gray-600">
                     <code className="text-sm break-all">
                       /api/{activeSite.uuid}/
                       <span className="italic text-muted-foreground dark:text-gray-400">
@@ -435,7 +439,7 @@ export default function DisplayApplication() {
                   <h3 className="text-lg font-semibold text-primary dark:text-white">
                     💡 Example
                   </h3>
-                  <div className="relative bg-background border rounded-lg p-4 shadow-sm max-h-60 overflow-auto dark:bg-gray-800 dark:border-gray-600">
+                  <div className="relative bg-background/80 border rounded-lg p-4 shadow-sm max-h-60 overflow-auto dark:bg-gray-800 dark:border-gray-600">
                     <pre className="text-xs whitespace-pre-wrap text-muted-foreground dark:text-gray-400">
                       {exampleCode}
                     </pre>

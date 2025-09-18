@@ -17,13 +17,6 @@ interface Website {
   domain: string;
 }
 
-const cardBaseClasses =
-  "rounded-lg shadow-md bg-white dark:bg-[#202124] dark:border dark:border-[#5f6368]";
-const cardHoverClasses =
-  "hover:shadow-lg hover:scale-[1.03] transition-transform duration-200 ease-in-out";
-const textPrimaryDark = "text-[#E8EAED]";
-const textMutedDark = "text-[#9aa0a6]";
-
 export default function ApplicationGrid() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,22 +75,17 @@ export default function ApplicationGrid() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
+    <div className="max-w-7xl mx-auto p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1
-          className={`text-3xl font-semibold text-black dark:${textPrimaryDark}`}
-        >
-          Select Your Application
-        </h1>
+        <h1 className="text-3xl font-semibold">Select Your Application</h1>
         <Button
           variant="outline"
           size="sm"
           onClick={() => router.push("/dashboard")}
           className="flex items-center gap-1"
         >
-          <ArrowLeft size={16} />
-          Back
+          <ArrowLeft size={16} /> Back
         </Button>
       </div>
 
@@ -106,20 +94,18 @@ export default function ApplicationGrid() {
           ? Array.from({ length: 6 }).map((_, i) => (
               <Skeleton
                 key={i}
-                className="h-32 w-full rounded-lg bg-muted/30 animate-pulse"
+                className="h-36 w-full rounded-2xl bg-muted/30 animate-pulse"
               />
             ))
           : websites.map((site, i) => (
               <motion.div
                 key={site.uuid}
-                initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+                initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
+                transition={{ duration: 0.5, delay: i * 0.05 }}
               >
-                <Card
-                  className={`${cardBaseClasses} ${cardHoverClasses} relative p-4`}
-                >
-                  <CardHeader className="flex justify-between items-center p-0">
+                <Card className="rounded-2xl bg-card/90 backdrop-blur p-4 shadow-md hover:shadow-xl hover:scale-[1.02] transition-transform duration-300 relative">
+                  <CardHeader className="flex justify-between items-start p-0 pb-3">
                     {editingId === site.uuid ? (
                       <div className="flex gap-2 items-center w-full">
                         <Input
@@ -151,12 +137,10 @@ export default function ApplicationGrid() {
                             router.push(`/dashboard/applications/${site.uuid}`)
                           }
                         >
-                          <CardTitle
-                            className={`dark:${textPrimaryDark} truncate`}
-                          >
+                          <CardTitle className="text-lg font-semibold truncate">
                             {site.name}
                           </CardTitle>
-                          <p className={`text-sm ${textMutedDark} truncate`}>
+                          <p className="text-sm text-muted-foreground truncate">
                             {site.domain}
                           </p>
                         </div>
@@ -169,7 +153,6 @@ export default function ApplicationGrid() {
                               setEditedName(site.name);
                             }}
                             aria-label="Edit application name"
-                            className="dark:text-gray-400"
                           >
                             <Pencil size={16} />
                           </Button>
@@ -178,7 +161,6 @@ export default function ApplicationGrid() {
                             variant="ghost"
                             onClick={() => deleteWebsite(site.uuid)}
                             aria-label="Delete application"
-                            className="dark:text-gray-400"
                           >
                             <Trash2 size={16} />
                           </Button>
