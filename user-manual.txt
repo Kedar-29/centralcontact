@@ -1,0 +1,92 @@
+# CentralContact
+
+**CentralContact** is a full-stack web platform that enables organizations to dynamically manage, edit, and deploy forms across multiple applications (websites). Built with Next.js 15 App Router, TypeScript, and Prisma, it allows users to define custom forms, view API endpoints, and integrate submissions seamlessly into any workflow.
+
+---
+Getting Started
+Clone the repository and install dependencies:
+
+git clone https://github.com/Kedar-29/centralcontact.git
+cd centralcontact
+npm install
+----
+Set up environment variables in .env:
+DATABASE_URL="mysql://user:password@localhost:3306/centralcontact"
+-----
+Push Prisma schema to your database:
+npx prisma db push
+-------------
+Setup & Run Locally
+Start the development server:
+npm run dev
+------------
+Adding a Website
+Go to the dashboard → Add Website.
+Enter the following details:
+Name: e.g., Inout Plus
+Domain: e.g., localhost:3000 (for local testing) or your production domain , online: e.g., website.domain (google.com)
+App Key: automatically generated
+Secret Key: automatically generated
+Save the website.
+You now have a website record with UUID, App Key, and Secret Key.
+------
+Creating a Form
+Click Add Form under your website.
+Enter:
+Form Title: e.g., College Details Form
+Form Fields: JSON object defining your fields, for example:
+{
+  "collegeName": "string",
+  "university": "string",
+  "location": "string",
+  "email": "string",
+  "website": "string",
+  "plan": "string"
+}
+
+Save the form → you get a Form ID.
+----------
+Domain Verification (if not understood, check chatGpt with /app/api/[uuid]/[formid]/route.ts)
+Local Development: Use localhost:3000 or 127.0.0.1:3000.
+Production: Use your real domain (e.g., mycollege.com).
+Ensure that the Origin header in requests matches the domain registered in CentralContact.
+Only submissions from verified domains are accepted.
+----------
+Submitting Form Data ( Form example to be saved on sender side website)
+Use fetch (or any HTTP client) to submit data:
+
+const payload = {
+  collegeName: "ABC College",
+  university: "XYZ University",
+  location: "Pune, India",
+  email: "info@abc.com",
+  website: "https://abc.com",
+  plan: "enterprise"
+}
+const res = await fetch(
+  'http://localhost:3001/api/<UUID>/<FORM_ID>',
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer <SECRET_KEY>'
+    },
+    body: JSON.stringify(payload)
+  }
+)
+if (!res.ok) {
+  const data = await res.json()
+  throw new Error(data.message || 'Failed to submit form')
+}
+
+Replace <UUID> with your website UUID and <FORM_ID> with your form ID.
+-------------
+Viewing Messages
+Go to the Form Details page in the dashboard → see all submissions.
+Messages are sorted by latest first.
+----------
+Tips
+Keep App Key & Secret Key safe.
+Always match Origin header exactly with your domain.
+For local testing, include the port in the domain.
+Use npx prisma studio to view the database visually.
