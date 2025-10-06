@@ -1,4 +1,4 @@
-import ApplicationGrid from "@/components/template/applications-grid";
+import ApplicationGrid from "@/app/components/template/applications-grid";
 import React from "react";
 
 const FormsPage = () => {

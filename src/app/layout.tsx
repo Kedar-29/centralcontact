@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import Header from "@/components/template/header";
-import { ThemeProvider } from "@/components/darkmode/theme-provider";
+import Header from "@/app/components/template/header";
+import { ThemeProvider } from "@/app/components/darkmode/theme-provider";
 
 export const metadata: Metadata = {
   title: "Central Contact Plus",

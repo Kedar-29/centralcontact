@@ -1,4 +1,4 @@
-import MessageTable from "@/components/template/display-all-messages";
+import MessageTable from "@/app/components/template/display-all-messages";
 import React from "react";
 
 const MessageTablepage = () => {

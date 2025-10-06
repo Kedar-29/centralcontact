@@ -8,7 +8,7 @@ import React, { useMemo } from "react";
 
 // Dynamically import WorldMap named export, disable SSR
 const WorldMap = dynamic(
-  () => import("@/components/ui/world-map").then((mod) => mod.WorldMap),
+  () => import("@/app/components/ui/world-map").then((mod) => mod.WorldMap),
   { ssr: false }
 );
 

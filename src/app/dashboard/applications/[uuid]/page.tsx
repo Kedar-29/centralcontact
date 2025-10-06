@@ -1,4 +1,4 @@
-import FormGrid from "@/components/template/FormGrid";
+import FormGrid from "@/app/components/template/FormGrid";
 
 export default async function FormsPage({
   params,
